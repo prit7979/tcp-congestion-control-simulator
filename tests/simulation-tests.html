@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TCP AIMD Simulator — Engine Test Suite</title>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-card: #1e293b;
+      --bg-inner: #0f172a;
+      --text-primary: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-blue: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-red: #ef4444;
+      --accent-amber: #f59e0b;
+      --border-color: #334155;
+      --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-family);
+      line-height: 1.5;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1.5rem;
+    }
+
+    .badge-phase {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-blue);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    /* Summary Card */
+    .summary-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+
+    .summary-stats {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+    }
+
+    .stat-value.total { color: var(--accent-blue); }
+    .stat-value.passed { color: var(--accent-green); }
+    .stat-value.failed { color: var(--accent-red); }
+
+    .btn-rerun {
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      padding: 0.625rem 1.25rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s ease;
+    }
+
+    .btn-rerun:hover {
+      background: #1d4ed8;
+    }
+
+    /* Test List */
+    .test-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .test-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      overflow: hidden;
+      transition: border-color 0.2s ease;
+    }
+
+    .test-card.pass {
+      border-left: 4px solid var(--accent-green);
+    }
+
+    .test-card.fail {
+      border-left: 4px solid var(--accent-red);
+    }
+
+    .test-header {
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .test-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.25rem 0.6rem;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .status-badge.pass {
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--accent-green);
+    }
+
+    .status-badge.fail {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--accent-red);
+    }
+
+    .test-name {
+      font-weight: 600;
+      font-size: 1rem;
+      color: #ffffff;
+    }
+
+    .test-details {
+      padding: 0 1.25rem 1.25rem 1.25rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      background: rgba(15, 23, 42, 0.5);
+    }
+
+    .test-description {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-top: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      font-family: var(--font-mono);
+      margin-top: 0.5rem;
+    }
+
+    .data-table th, .data-table td {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .data-table th {
+      color: var(--text-muted);
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .data-table td.val-expected {
+      color: var(--accent-blue);
+    }
+
+    .data-table td.val-actual {
+      color: #ffffff;
+    }
+
+    .data-table td.val-status-ok {
+      color: var(--accent-green);
+    }
+
+    .data-table td.val-status-err {
+      color: var(--accent-red);
+    }
+
+    .error-box {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--accent-red);
+      color: #fca5a5;
+      padding: 0.75rem;
+      border-radius: 0.375rem;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+    }
+
+    footer {
+      margin-top: 3rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border-color);
+      padding-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="badge-phase">Phase 1: Verification</span>
+      <h1>TCP AIMD Simulator Test Suite</h1>
+      <p class="subtitle">Validates mathematical accuracy, threshold transitions, reset behavior, and integrity of <code>AIMDSimulator</code>.</p>
+    </header>
+
+    <div class="summary-card">
+      <div class="summary-stats">
+        <div class="stat-item">
+          <span class="stat-label">Total Tests</span>
+          <span class="stat-value total" id="total-count">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Passed</span>
+          <span class="stat-value passed" id="passed-count">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Failed</span>
+          <span class="stat-value failed" id="failed-count">0</span>
+        </div>
+      </div>
+      <button class="btn-rerun" onclick="runAllTests()">Rerun Test Suite</button>
+    </div>
+
+    <div id="test-results" class="test-list">
+      <!-- Test cards populated dynamically -->
+    </div>
+
+    <footer>
+      TCP Congestion Control Simulator — College Mini Project (Phase 1)
+    </footer>
+  </div>
+
+  <!-- Load the actual AIMDSimulator engine using a relative path -->
+  <script src="../js/simulation.js"></script>
+
+  <script>
+    // Test assertion utilities
+    function assertEqual(actual, expected, message) {
+      if (actual !== expected) {
+        throw new Error(`${message || 'Assertion failed'}: expected ${JSON.stringify(expected)}, but got ${JSON.stringify(actual)}`);
+      }
+    }
+
+    function assertDeepEqual(actual, expected, message) {
+      const a = JSON.stringify(actual);
+      const b = JSON.stringify(expected);
+      if (a !== b) {
+        throw new Error(`${message || 'Assertion failed'}: expected ${b}, but got ${a}`);
+      }
+    }
+
+    function assertTrue(condition, message) {
+      if (!condition) {
+        throw new Error(message || 'Expected condition to be truthy');
+      }
+    }
+
+    function assertThrows(fn, message) {
+      let threw = false;
+      try {
+        fn();
+      } catch (e) {
+        threw = true;
+      }
+      if (!threw) {
+        throw new Error(message || 'Expected function to throw an error, but it did not.');
+      }
+    }
+
+    // Test runner state
+    const testSuite = [
+      {
+        id: 1,
+        title: "TEST 1: Initial state",
+        description: "Verify default configuration values at RTT 0 (initialCwnd=4, alpha=1, beta=0.5, congestionThreshold=12).",
+        run: () => {
+          const sim = new AIMDSimulator();
+          const state = sim.getState();
+          assertEqual(state.rtt, 0, "RTT should start at 0");
+          assertEqual(state.cwnd, 4, "Initial cwnd should be 4");
+          assertEqual(state.history.length, 1, "Initial history length should be 1");
+          return {
+            comparisons: [
+              { label: "RTT", expected: 0, actual: state.rtt },
+              { label: "cwnd", expected: 4, actual: state.cwnd },
+              { label: "History entries", expected: 1, actual: state.history.length }
+            ]
+          };
+        }
+      },
+      {
+        id: 2,
+        title: "TEST 2: First successful RTT",
+        description: "Verify candidateCwnd = 4 + 1 = 5 < 12. Additive increase applied.",
+        run: () => {
+          const sim = new AIMDSimulator();
+          const state = sim.step();
+          assertEqual(state.rtt, 1, "RTT should be 1 after one step");
+          assertEqual(state.cwnd, 5, "cwnd should be 5 after one step");
+          return {
+            comparisons: [
+              { label: "RTT", expected: 1, actual: state.rtt },
+              { label: "cwnd", expected: 5, actual: state.cwnd }
+            ]
+          };
+        }
+      },
+      {
+        id: 3,
+        title: "TEST 3: Three successful RTT rounds",
+        description: "Starting from a fresh simulator, advance 3 steps. cwnd should grow from 4 to 7.",
+        run: () => {
+          const sim = new AIMDSimulator();
+          sim.step(); // RTT 1: cwnd 5
+          sim.step(); // RTT 2: cwnd 6
+          const state = sim.step(); // RTT 3: cwnd 7
+          assertEqual(state.rtt, 3, "RTT should be 3");
+          assertEqual(state.cwnd, 7, "cwnd should be 7");
+          return {
+            comparisons: [
+              { label: "RTT", expected: 3, actual: state.rtt },
+              { label: "cwnd", expected: 7, actual: state.cwnd }
+            ]
+          };
+        }
+      },
+      {
+        id: 4,
+        title: "TEST 4: Congestion event",
+        description: "Execute 8 steps. At step 8, candidateCwnd = 11 + 1 = 12 >= 12 (threshold), so cwnd = 12 * 0.5 = 6.",
+        run: () => {
+          const sim = new AIMDSimulator();
+          const expectedCwnds = [4, 5, 6, 7, 8, 9, 10, 11, 6];
+          const actualCwnds = [sim.getState().cwnd];
+
+          for (let i = 1; i <= 8; i++) {
+            const state = sim.step();
+            actualCwnds.push(state.cwnd);
+          }
+
+          assertDeepEqual(actualCwnds, expectedCwnds, "Congestion window progression mismatch");
+
+          return {
+            comparisons: expectedCwnds.map((exp, idx) => ({
+              label: `RTT ${idx} cwnd`,
+              expected: exp,
+              actual: actualCwnds[idx]
+            }))
+          };
+        }
+      },
+      {
+        id: 5,
+        title: "TEST 5: Growth after congestion",
+        description: "Continue the previous simulator for 2 additional RTT rounds. cwnd grows 6 -> 7 -> 8.",
+        run: () => {
+          const sim = new AIMDSimulator();
+          for (let i = 1; i <= 8; i++) sim.step(); // reach RTT 8 (cwnd = 6)
+          const state9 = sim.step(); // RTT 9: candidate = 6+1=7 < 12 -> 7
+          const state10 = sim.step(); // RTT 10: candidate = 7+1=8 < 12 -> 8
+
+          assertEqual(state9.rtt, 9, "RTT should be 9");
+          assertEqual(state9.cwnd, 7, "cwnd at RTT 9 should be 7");
+          assertEqual(state10.rtt, 10, "RTT should be 10");
+          assertEqual(state10.cwnd, 8, "cwnd at RTT 10 should be 8");
+
+          return {
+            comparisons: [
+              { label: "RTT 9 cwnd", expected: 7, actual: state9.cwnd },
+              { label: "RTT 10 cwnd", expected: 8, actual: state10.cwnd }
+            ]
+          };
+        }
+      },
+      {
+        id: 6,
+        title: "TEST 6: Reset",
+        description: "After executing multiple steps, call reset(). RTT and cwnd must return to 0 and 4, and history must contain only initial state.",
+        run: () => {
+          const sim = new AIMDSimulator();
+          sim.step();
+          sim.step();
+          sim.step();
+          sim.reset();
+          const state = sim.getState();
+
+          assertEqual(state.rtt, 0, "RTT after reset should be 0");
+          assertEqual(state.cwnd, 4, "cwnd after reset should be 4");
+          assertEqual(state.history.length, 1, "History after reset should have exactly 1 record");
+          assertEqual(state.events.length, 1, "Events after reset should have exactly 1 record");
+
+          return {
+            comparisons: [
+              { label: "RTT", expected: 0, actual: state.rtt },
+              { label: "cwnd", expected: 4, actual: state.cwnd },
+              { label: "History entries", expected: 1, actual: state.history.length },
+              { label: "Event entries", expected: 1, actual: state.events.length }
+            ]
+          };
+        }
+      },
+      {
+        id: 7,
+        title: "TEST 7: Custom configuration",
+        description: "Configure initialCwnd=2, alpha=2, beta=0.5, congestionThreshold=10. After 1 step: candidateCwnd = 2 + 2 = 4 < 10.",
+        run: () => {
+          const sim = new AIMDSimulator({
+            initialCwnd: 2,
+            alpha: 2,
+            beta: 0.5,
+            congestionThreshold: 10
+          });
+          const state = sim.step();
+
+          assertEqual(state.rtt, 1, "RTT should be 1");
+          assertEqual(state.cwnd, 4, "cwnd should be 4");
+
+          return {
+            comparisons: [
+              { label: "RTT", expected: 1, actual: state.rtt },
+              { label: "cwnd", expected: 4, actual: state.cwnd }
+            ]
+          };
+        }
+      },
+      {
+        id: 8,
+        title: "TEST 8: Invalid configuration",
+        description: "Verify that invalid values for arguments, initialCwnd, alpha, beta, and congestionThreshold throw clear errors.",
+        run: () => {
+          const invalidCases = [
+            { name: "null config argument", cfg: null },
+            { name: "string config argument", cfg: "invalid" },
+            { name: "number config argument", cfg: 42 },
+            { name: "array config argument", cfg: [1, 2] },
+            { name: "boolean config argument", cfg: true },
+            { name: "initialCwnd <= 0", cfg: { initialCwnd: 0 } },
+            { name: "initialCwnd negative", cfg: { initialCwnd: -4 } },
+            { name: "initialCwnd non-numeric", cfg: { initialCwnd: "bad" } },
+            { name: "alpha <= 0", cfg: { alpha: 0 } },
+            { name: "alpha non-numeric", cfg: { alpha: NaN } },
+            { name: "beta <= 0", cfg: { beta: 0 } },
+            { name: "beta >= 1", cfg: { beta: 1.0 } },
+            { name: "congestionThreshold <= 0", cfg: { congestionThreshold: 0 } },
+            { name: "congestionThreshold < initialCwnd", cfg: { initialCwnd: 10, congestionThreshold: 8 } },
+            { name: "congestionThreshold == initialCwnd", cfg: { initialCwnd: 10, congestionThreshold: 10 } }
+          ];
+
+          invalidCases.forEach(testCase => {
+            assertThrows(() => new AIMDSimulator(testCase.cfg), `Should reject config with ${testCase.name}`);
+          });
+
+          // Verify undefined and omitted arguments use default configuration
+          const simDefault1 = new AIMDSimulator();
+          assertEqual(simDefault1.cwnd, 4, "Omitted config argument must use default cwnd 4");
+          const simDefault2 = new AIMDSimulator(undefined);
+          assertEqual(simDefault2.cwnd, 4, "Undefined config argument must use default cwnd 4");
+
+          return {
+            comparisons: [
+              ...invalidCases.map(c => ({
+                label: `Rejected ${c.name}`,
+                expected: "Error thrown",
+                actual: "Error thrown"
+              })),
+              { label: "Omitted config argument uses defaults", expected: 4, actual: simDefault1.cwnd },
+              { label: "Undefined config argument uses defaults", expected: 4, actual: simDefault2.cwnd }
+            ]
+          };
+        }
+      },
+      {
+        id: 9,
+        title: "TEST 9: History integrity",
+        description: "Verify that mutating arrays or records returned by getState() does not modify internal simulator state.",
+        run: () => {
+          const sim = new AIMDSimulator();
+          sim.step();
+          const snapshot1 = sim.getState();
+
+          // Attempt external mutation
+          snapshot1.history.push({ rtt: 999, cwnd: 999 });
+          snapshot1.events.push({ rtt: 999, description: "Hacked" });
+          if (snapshot1.history[0]) {
+            snapshot1.history[0].cwnd = 9999;
+          }
+
+          const snapshot2 = sim.getState();
+          assertEqual(snapshot2.history.length, 2, "Internal history length should not change");
+          assertEqual(snapshot2.events.length, 2, "Internal events length should not change");
+          assertEqual(snapshot2.history[0].cwnd, 4, "Internal history record should not be mutated");
+
+          return {
+            comparisons: [
+              { label: "History length preserved", expected: 2, actual: snapshot2.history.length },
+              { label: "Events length preserved", expected: 2, actual: snapshot2.events.length },
+              { label: "Initial record cwnd unmodified", expected: 4, actual: snapshot2.history[0].cwnd }
+            ]
+          };
+        }
+      },
+      {
+        id: 10,
+        title: "TEST 10: Deterministic behavior",
+        description: "Two independent simulators with identical configs must produce identical cwnd sequences over 15 steps.",
+        run: () => {
+          const simA = new AIMDSimulator();
+          const simB = new AIMDSimulator();
+
+          const seqA = [simA.getState().cwnd];
+          const seqB = [simB.getState().cwnd];
+
+          for (let i = 0; i < 15; i++) {
+            seqA.push(simA.step().cwnd);
+            seqB.push(simB.step().cwnd);
+          }
+
+          assertDeepEqual(seqA, seqB, "Independent simulators must produce identical sequences");
+
+          return {
+            comparisons: [
+              { label: "Total Steps", expected: 15, actual: 15 },
+              { label: "Sequence Matching", expected: "Identical", actual: "Identical" }
+            ]
+          };
+        }
+      },
+      {
+        id: 11,
+        title: "TEST 11: Fractional-value test",
+        description: "Verify fractional cwnd behavior: initialCwnd=4, alpha=1, beta=0.5, threshold=11. At RTT 7, candidate 11 yields 5.5, then continues 6.5 -> 7.5.",
+        run: () => {
+          const sim = new AIMDSimulator({
+            initialCwnd: 4,
+            alpha: 1,
+            beta: 0.5,
+            congestionThreshold: 11
+          });
+          const expectedCwnds = [4, 5, 6, 7, 8, 9, 10, 5.5, 6.5, 7.5];
+          const actualCwnds = [sim.getState().cwnd];
+
+          for (let i = 1; i <= 9; i++) {
+            const state = sim.step();
+            actualCwnds.push(state.cwnd);
+          }
+
+          assertDeepEqual(actualCwnds, expectedCwnds, "Fractional cwnd sequence mismatch");
+
+          return {
+            comparisons: expectedCwnds.map((exp, idx) => ({
+              label: `RTT ${idx} cwnd`,
+              expected: exp,
+              actual: actualCwnds[idx]
+            }))
+          };
+        }
+      },
+      {
+        id: 12,
+        title: "TEST 12: Threshold boundary tests",
+        description: "Verify rejection of threshold == initialCwnd and threshold < initialCwnd, and verify exact candidate == threshold triggers congestion.",
+        run: () => {
+          // 1. Threshold equal to initialCwnd must be rejected
+          assertThrows(() => new AIMDSimulator({ initialCwnd: 10, congestionThreshold: 10 }), "Should reject threshold == initialCwnd");
+
+          // 2. Threshold below initialCwnd must be rejected
+          assertThrows(() => new AIMDSimulator({ initialCwnd: 10, congestionThreshold: 9 }), "Should reject threshold < initialCwnd");
+
+          // 3. Candidate window exactly equal to threshold must trigger congestion
+          const sim = new AIMDSimulator({
+            initialCwnd: 5,
+            alpha: 1,
+            beta: 0.5,
+            congestionThreshold: 6
+          });
+          // Step 1: candidateCwnd = 5 + 1 = 6 === threshold (6) -> triggers congestion!
+          const state = sim.step();
+          assertEqual(state.rtt, 1, "RTT should be 1");
+          assertEqual(state.cwnd, 3, "cwnd should be 6 * 0.5 = 3");
+          const lastEvent = state.events[state.events.length - 1];
+          assertEqual(lastEvent.eventType, 'CONGESTION_EVENT', "Event type must be CONGESTION_EVENT");
+
+          return {
+            comparisons: [
+              { label: "Rejected threshold == initialCwnd", expected: "Error thrown", actual: "Error thrown" },
+              { label: "Rejected threshold < initialCwnd", expected: "Error thrown", actual: "Error thrown" },
+              { label: "Exact candidate == threshold cwnd", expected: 3, actual: state.cwnd },
+              { label: "Exact candidate == threshold eventType", expected: "CONGESTION_EVENT", actual: lastEvent.eventType }
+            ]
+          };
+        }
+      },
+      {
+        id: 13,
+        title: "TEST 13: Long-run determinism (50 RTT steps)",
+        description: "Run 50 RTT steps on two independent instances. Verify cwnd positive and finite, RTT increments by 1 per step, history length is 51, and sequences match identically.",
+        run: () => {
+          const sim1 = new AIMDSimulator();
+          const sim2 = new AIMDSimulator();
+
+          const seq1 = [sim1.getState().cwnd];
+          const seq2 = [sim2.getState().cwnd];
+
+          for (let step = 1; step <= 50; step++) {
+            const state1 = sim1.step();
+            const state2 = sim2.step();
+
+            assertTrue(Number.isFinite(state1.cwnd) && state1.cwnd > 0, `cwnd must be positive and finite at RTT ${step}`);
+            assertEqual(state1.rtt, step, `RTT must increment exactly by 1 (expected ${step}, got ${state1.rtt})`);
+
+            seq1.push(state1.cwnd);
+            seq2.push(state2.cwnd);
+          }
+
+          const finalState1 = sim1.getState();
+          assertEqual(finalState1.rtt, 50, "Final RTT must be 50");
+          assertEqual(finalState1.history.length, 51, "History must contain initial state + 50 steps (51 total)");
+          assertEqual(finalState1.events.length, 51, "Events must contain initial state + 50 steps (51 total)");
+
+          assertDeepEqual(seq1, seq2, "Independent runs must produce identical 50-step sequences");
+
+          return {
+            comparisons: [
+              { label: "Steps executed", expected: 50, actual: 50 },
+              { label: "All cwnd positive & finite", expected: true, actual: true },
+              { label: "Final RTT", expected: 50, actual: finalState1.rtt },
+              { label: "History entries count", expected: 51, actual: finalState1.history.length },
+              { label: "50-step deterministic match", expected: "Identical", actual: "Identical" }
+            ]
+          };
+        }
+      },
+      {
+        id: 14,
+        title: "TEST 14: Event log verification & state transitions",
+        description: "Verify initialization event has type INIT, successful rounds record ADDITIVE_INCREASE, threshold-triggered rounds record CONGESTION_EVENT, and messages match transitions.",
+        run: () => {
+          const sim = new AIMDSimulator();
+
+          // Initial state check
+          const initState = sim.getState();
+          assertEqual(initState.events[0].eventType, 'INIT', "Initial event must have type INIT");
+          assertTrue(initState.events[0].description.includes("Simulation initialized"), "Initial description should describe init");
+
+          // Step 1: Additive Increase
+          const state1 = sim.step();
+          const event1 = state1.events[state1.events.length - 1];
+          assertEqual(event1.eventType, 'ADDITIVE_INCREASE', "Successful round must record ADDITIVE_INCREASE");
+          assertTrue(event1.description.includes("Additive Increase"), "Description must mention Additive Increase");
+          assertEqual(event1.cwnd, 5, "Event cwnd must match state cwnd (5)");
+
+          // Advance to RTT 8 (Congestion event)
+          for (let i = 2; i <= 7; i++) sim.step();
+          const state8 = sim.step(); // RTT 8: candidate 12 >= 12 -> congestion!
+          const event8 = state8.events[state8.events.length - 1];
+          assertEqual(event8.eventType, 'CONGESTION_EVENT', "Congestion step must record CONGESTION_EVENT");
+          assertTrue(event8.description.includes("Congestion event triggered"), "Description must describe congestion event");
+          assertTrue(event8.description.includes("Multiplicative Decrease"), "Description must describe Multiplicative Decrease");
+          assertEqual(event8.cwnd, 6, "Event cwnd must match state cwnd (6)");
+
+          return {
+            comparisons: [
+              { label: "RTT 0 Event Type", expected: "INIT", actual: initState.events[0].eventType },
+              { label: "RTT 1 Event Type", expected: "ADDITIVE_INCREASE", actual: event1.eventType },
+              { label: "RTT 8 Event Type", expected: "CONGESTION_EVENT", actual: event8.eventType },
+              { label: "RTT 8 cwnd matches event", expected: 6, actual: event8.cwnd }
+            ]
+          };
+        }
+      }
+    ];
+
+    function runAllTests() {
+      const container = document.getElementById("test-results");
+      container.innerHTML = "";
+
+      let passedCount = 0;
+      let failedCount = 0;
+
+      testSuite.forEach(test => {
+        let passed = false;
+        let resultData = null;
+        let errorMessage = null;
+
+        try {
+          resultData = test.run();
+          passed = true;
+          passedCount++;
+        } catch (err) {
+          passed = false;
+          failedCount++;
+          errorMessage = err.message || String(err);
+        }
+
+        const card = document.createElement("div");
+        card.className = `test-card ${passed ? 'pass' : 'fail'}`;
+
+        let comparisonsHtml = "";
+        if (resultData && resultData.comparisons) {
+          comparisonsHtml = `
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Metric / Check</th>
+                  <th>Expected</th>
+                  <th>Actual</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${resultData.comparisons.map(c => `
+                  <tr>
+                    <td>${c.label}</td>
+                    <td class="val-expected">${c.expected}</td>
+                    <td class="val-actual">${c.actual}</td>
+                    <td class="${c.expected === c.actual ? 'val-status-ok' : 'val-status-err'}">
+                      ${c.expected === c.actual ? '✓ OK' : '✗ MISMATCH'}
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `;
+        }
+
+        let errorHtml = "";
+        if (errorMessage) {
+          errorHtml = `<div class="error-box"><strong>Error:</strong> ${errorMessage}</div>`;
+        }
+
+        card.innerHTML = `
+          <div class="test-header">
+            <div class="test-title-wrap">
+              <span class="status-badge ${passed ? 'pass' : 'fail'}">${passed ? 'PASS' : 'FAIL'}</span>
+              <span class="test-name">${test.title}</span>
+            </div>
+          </div>
+          <div class="test-details">
+            <div class="test-description">${test.description}</div>
+            ${comparisonsHtml}
+            ${errorHtml}
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+
+      document.getElementById("total-count").textContent = testSuite.length;
+      document.getElementById("passed-count").textContent = passedCount;
+      document.getElementById("failed-count").textContent = failedCount;
+    }
+
+    // Auto-run tests on page load
+    window.addEventListener("DOMContentLoaded", runAllTests);
+  </script>
+</body>
+</html>
