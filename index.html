@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TCP Congestion Control Simulator</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <div class="logo-area">
+        <span class="logo-badge">TCP AIMD</span>
+        <h1 class="app-title">TCP Congestion Control Simulator</h1>
+      </div>
+      <nav class="nav-links">
+        <a href="tests/simulation-tests.html" class="nav-link" id="test-suite-link">Run Test Suite (14 Tests)</a>
+        <a href="https://github.com/prit7979/tcp-congestion-control-simulator" target="_blank" rel="noopener noreferrer" class="nav-link">GitHub Repository</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="dashboard-container">
+    <!-- Conceptual Overview -->
+    <section class="intro-card" aria-label="AIMD Overview">
+      <h2>About AIMD (Additive Increase, Multiplicative Decrease)</h2>
+      <p>
+        AIMD is the feedback-control algorithm used by TCP congestion avoidance. It dynamically probes for available network bandwidth by increasing transmission rate conservatively and backing off aggressively when congestion is detected.
+      </p>
+      <div class="aimd-rules">
+        <div class="rule-box">
+          <div class="rule-title ai">Additive Increase (AI)</div>
+          <div class="rule-desc">
+            When all packets in an RTT are successfully acknowledged, cwnd increases linearly by <strong>&alpha; (+1 segment)</strong>.
+          </div>
+        </div>
+        <div class="rule-box">
+          <div class="rule-title md">Multiplicative Decrease (MD)</div>
+          <div class="rule-desc">
+            When congestion occurs (candidate window &ge; threshold), cwnd is reduced multiplicatively by factor <strong>&beta; (&times;0.5)</strong>.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Metrics Cards -->
+    <section class="metrics-grid" aria-label="Simulation Metrics">
+      <div class="metric-card">
+        <span class="metric-label">Congestion Window (cwnd)</span>
+        <div class="metric-value">
+          <span id="cwnd-display">4</span>
+          <span class="metric-unit">segments</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <span class="metric-label">Current RTT Round</span>
+        <div class="metric-value">
+          <span id="rtt-display">0</span>
+          <span class="metric-unit">rounds</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <span class="metric-label">Simulation Status</span>
+        <div class="metric-status status-ready" id="status-display">
+          Ready
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <span class="metric-label">Congestion Threshold</span>
+        <div class="metric-value">
+          <span id="threshold-display">12</span>
+          <span class="metric-unit">segments</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Controls -->
+    <section class="controls-card" aria-label="Simulation Controls">
+      <div class="controls-info">
+        <div class="controls-title">Manual Step Control</div>
+        <div class="controls-hint">Advance the simulation round-by-round to observe cwnd growth and backoff.</div>
+      </div>
+      <div class="button-group">
+        <button id="step-btn" class="btn btn-primary" type="button">
+          Step Forward &rarr;
+        </button>
+        <button id="reset-btn" class="btn btn-secondary" type="button">
+          Reset Simulation
+        </button>
+      </div>
+    </section>
+
+    <!-- Event Log -->
+    <section class="log-section" aria-label="Event History">
+      <div class="log-header">
+        <h2 class="log-title">Simulation Event Log</h2>
+        <span class="log-count" id="log-count">1 Event</span>
+      </div>
+      <div class="event-log-container" id="event-log">
+        <!-- Event entries injected by js/app.js -->
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    TCP Congestion Control Simulator — College Mini Project (Phase 2.1)
+  </footer>
+
+  <!-- Scripts: AIMDSimulator is single source of truth, loaded before app.js -->
+  <script src="js/simulation.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
