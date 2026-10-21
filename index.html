@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TCP Congestion Control Simulator</title>
+  <meta name="description" content="Interactive educational simulator demonstrating TCP AIMD congestion avoidance, congestion window dynamics, packet transmission animation, and threshold-based packet loss.">
+  <title>TCP Congestion Control Simulator — AIMD Interactive Demonstration</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -23,22 +24,58 @@
   <main class="dashboard-container">
     <!-- Conceptual Overview -->
     <section class="intro-card" aria-label="AIMD Overview">
-      <h2>About AIMD (Additive Increase, Multiplicative Decrease)</h2>
-      <p>
-        AIMD is the feedback-control algorithm used by TCP congestion avoidance. It dynamically probes for available network bandwidth by increasing transmission rate conservatively and backing off aggressively when congestion is detected.
+      <div class="intro-header">
+        <h2>About AIMD (Additive Increase, Multiplicative Decrease)</h2>
+        <span class="intro-badge">TCP Congestion Avoidance</span>
+      </div>
+      <p class="intro-summary">
+        AIMD is the closed-loop feedback-control algorithm used by TCP to dynamically probe for available network bandwidth. The sender increases its transmission rate conservatively during successful rounds and backs off aggressively when congestion is detected.
       </p>
+
       <div class="aimd-rules">
         <div class="rule-box">
           <div class="rule-title ai">Additive Increase (AI)</div>
           <div class="rule-desc">
-            When all packets in an RTT are successfully acknowledged, cwnd increases linearly by <strong>&alpha; (+1 segment)</strong>.
+            When all packets in an RTT are successfully acknowledged, cwnd increases linearly by <strong>&alpha;</strong> (+1 segment/RTT by default).
           </div>
         </div>
         <div class="rule-box">
           <div class="rule-title md">Multiplicative Decrease (MD)</div>
           <div class="rule-desc">
-            When congestion occurs (candidate window &ge; threshold), cwnd is reduced multiplicatively by factor <strong>&beta; (&times;0.5)</strong>.
+            When congestion occurs (candidate window &ge; threshold), cwnd is reduced multiplicatively by factor <strong>&beta;</strong> (&times;0.5 by default).
           </div>
+        </div>
+      </div>
+
+      <!-- Core Concepts Breakdown -->
+      <div class="concepts-grid">
+        <div class="concept-item">
+          <span class="concept-term">cwnd</span>
+          <span class="concept-def"><strong>Congestion Window:</strong> The maximum volume of data (in segments) the sender may transmit without waiting for an ACK.</span>
+        </div>
+        <div class="concept-item">
+          <span class="concept-term">RTT</span>
+          <span class="concept-def"><strong>Round Trip Time:</strong> The round duration taken for packets to reach the receiver and for their ACKs to return.</span>
+        </div>
+        <div class="concept-item">
+          <span class="concept-term">&alpha; (Alpha)</span>
+          <span class="concept-def"><strong>Additive Increase:</strong> Segments added to cwnd upon a congestion-free RTT round.</span>
+        </div>
+        <div class="concept-item">
+          <span class="concept-term">&beta; (Beta)</span>
+          <span class="concept-def"><strong>Multiplicative Factor:</strong> Window multiplier applied upon detecting congestion (0 &lt; &beta; &lt; 1).</span>
+        </div>
+        <div class="concept-item">
+          <span class="concept-term">Threshold</span>
+          <span class="concept-def"><strong>Congestion Limit:</strong> Window boundary triggering deterministic packet loss in this model.</span>
+        </div>
+      </div>
+
+      <!-- Educational Scope Note -->
+      <div class="model-disclaimer">
+        <span class="disclaimer-icon" aria-hidden="true">&#9432;</span>
+        <div class="disclaimer-text">
+          <strong>Educational Model Note:</strong> This simulator implements a deterministic, threshold-based educational model of TCP AIMD congestion avoidance. It intentionally abstracts away slow start, retransmission timeouts (RTO), and triple duplicate ACKs to focus purely on the mathematical sawtooth principles of AIMD.
         </div>
       </div>
     </section>
@@ -66,6 +103,7 @@
         <div class="metric-status status-ready" id="status-display">
           Ready
         </div>
+        <div class="metric-subtext" id="status-subtext">Initial state (RTT 0)</div>
       </div>
 
       <div class="metric-card">
@@ -77,19 +115,174 @@
       </div>
     </section>
 
+    <!-- Simulation Configuration Panel -->
+    <section class="settings-card" aria-label="Simulation Settings">
+      <div class="settings-header">
+        <div class="settings-title-wrap">
+          <h2 class="settings-title">Simulation Settings</h2>
+          <span class="settings-badge">AIMD Parameters</span>
+        </div>
+        <p class="settings-subtitle">Adjust core TCP congestion avoidance parameters to observe different network dynamics.</p>
+      </div>
+
+      <form id="settings-form" class="settings-form" novalidate>
+        <div class="settings-grid">
+          <!-- Parameter 1: Initial cwnd -->
+          <div class="setting-item">
+            <label for="input-initial-cwnd" class="setting-label">
+              Initial cwnd
+              <span class="param-symbol">(W<sub>0</sub>)</span>
+            </label>
+            <div class="input-wrap">
+              <input type="number" id="input-initial-cwnd" name="initialCwnd" class="form-input" value="4" min="0.1" step="any" required>
+              <span class="input-unit">MSS</span>
+            </div>
+            <span class="setting-hint">Starting congestion window size in segments (> 0).</span>
+          </div>
+
+          <!-- Parameter 2: Alpha (Additive Increase) -->
+          <div class="setting-item">
+            <label for="input-alpha" class="setting-label">
+              Alpha &alpha;
+              <span class="param-symbol">(Additive Increase)</span>
+            </label>
+            <div class="input-wrap">
+              <input type="number" id="input-alpha" name="alpha" class="form-input" value="1" min="0.1" step="any" required>
+              <span class="input-unit">seg / RTT</span>
+            </div>
+            <span class="setting-hint">Linear window increase per successful RTT (> 0).</span>
+          </div>
+
+          <!-- Parameter 3: Beta (Multiplicative Decrease) -->
+          <div class="setting-item">
+            <label for="input-beta" class="setting-label">
+              Beta &beta;
+              <span class="param-symbol">(Multiplicative Decrease)</span>
+            </label>
+            <div class="input-wrap">
+              <input type="number" id="input-beta" name="beta" class="form-input" value="0.5" min="0.01" max="0.99" step="any" required>
+              <span class="input-unit">factor</span>
+            </div>
+            <span class="setting-hint">Backoff multiplier on congestion (0 &lt; &beta; &lt; 1).</span>
+          </div>
+
+          <!-- Parameter 4: Congestion Threshold -->
+          <div class="setting-item">
+            <label for="input-threshold" class="setting-label">
+              Congestion Threshold
+              <span class="param-symbol">(Loss Limit)</span>
+            </label>
+            <div class="input-wrap">
+              <input type="number" id="input-threshold" name="congestionThreshold" class="form-input" value="12" min="1" step="any" required>
+              <span class="input-unit">MSS</span>
+            </div>
+            <span class="setting-hint">Window threshold triggering congestion (&gt; Initial cwnd).</span>
+          </div>
+        </div>
+
+        <!-- Validation / Feedback Message Area -->
+        <div id="settings-feedback" class="settings-feedback" role="alert" aria-live="polite" style="display: none;"></div>
+
+        <!-- Action Buttons -->
+        <div class="settings-actions">
+          <button type="submit" id="apply-settings-btn" class="btn btn-primary">
+            Apply Settings
+          </button>
+          <button type="button" id="restore-defaults-btn" class="btn btn-secondary">
+            Restore Defaults
+          </button>
+        </div>
+      </form>
+    </section>
+
     <!-- Interactive Controls -->
     <section class="controls-card" aria-label="Simulation Controls">
       <div class="controls-info">
-        <div class="controls-title">Manual Step Control</div>
-        <div class="controls-hint">Advance the simulation round-by-round to observe cwnd growth and backoff.</div>
+        <div class="controls-title">Simulation Controls</div>
+        <div class="controls-hint">Automatic playback (1s interval) or manual step-by-step control.</div>
       </div>
       <div class="button-group">
+        <button id="start-btn" class="btn btn-success" type="button">
+          Start &#9654;
+        </button>
+        <button id="pause-btn" class="btn btn-warning" type="button" disabled>
+          Pause &#10074;&#10074;
+        </button>
         <button id="step-btn" class="btn btn-primary" type="button">
           Step Forward &rarr;
         </button>
         <button id="reset-btn" class="btn btn-secondary" type="button">
           Reset Simulation
         </button>
+      </div>
+    </section>
+
+    <!-- Packet and ACK Transmission Animation -->
+    <section class="animation-section" aria-label="Packet and ACK Transmission Animation">
+      <div class="animation-header">
+        <div class="animation-title-wrap">
+          <h2 class="animation-title">Packet Transmission &amp; ACK Flow</h2>
+          <span class="animation-status-badge status-idle" id="anim-status-badge">Idle</span>
+        </div>
+        <div class="animation-legend">
+          <div class="legend-item">
+            <span class="legend-dot dot-packet"></span>
+            <span class="legend-text">Data Packet</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot dot-ack"></span>
+            <span class="legend-text">ACK Return</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot dot-loss"></span>
+            <span class="legend-text">Congestion Drop</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="network-stage" id="network-stage">
+        <!-- Sender Node -->
+        <div class="network-node sender-node" id="sender-node">
+          <div class="node-icon">&#128187;</div>
+          <div class="node-name">Sender</div>
+          <div class="node-role">TCP Host</div>
+          <div class="node-badge" id="anim-sender-cwnd">cwnd: 4</div>
+        </div>
+
+        <!-- Network Channel -->
+        <div class="network-channel" id="network-channel">
+          <div class="channel-track forward-track" title="Forward path (Data Packets)">
+            <span class="track-indicator">DATA &rarr;</span>
+          </div>
+          <div class="channel-track reverse-track" title="Reverse path (ACKs)">
+            <span class="track-indicator">&larr; ACK</span>
+          </div>
+          <!-- In-flight packets and ACKs injected dynamically -->
+          <div class="in-flight-container" id="in-flight-container" aria-live="polite"></div>
+          <div class="channel-status" id="anim-channel-status">Ready to transmit (RTT 0)</div>
+        </div>
+
+        <!-- Receiver Node -->
+        <div class="network-node receiver-node" id="receiver-node">
+          <div class="node-icon">&#128421;</div>
+          <div class="node-name">Receiver</div>
+          <div class="node-role">TCP Peer</div>
+          <div class="node-badge badge-receiver" id="anim-receiver-status">Listening</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Live Congestion Window Graph -->
+    <section class="chart-section" aria-label="Congestion Window Graph">
+      <div class="chart-header">
+        <h2 class="chart-title">Congestion Window vs RTT</h2>
+        <div class="chart-legend-info">
+          <span class="legend-indicator"></span>
+          <span class="legend-text">cwnd (segments)</span>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="cwnd-chart" role="img" aria-label="Congestion Window vs RTT line graph"></canvas>
       </div>
     </section>
 
@@ -106,11 +299,14 @@
   </main>
 
   <footer>
-    TCP Congestion Control Simulator — College Mini Project (Phase 2.1)
+    TCP Congestion Control Simulator &bull; College B.Tech Mini Project &bull; Computer Networks
   </footer>
 
-  <!-- Scripts: AIMDSimulator is single source of truth, loaded before app.js -->
+  <!-- Scripts: Chart.js CDN, AIMDSimulator engine, chart module, animation module, and app controller -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="js/simulation.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/animation.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

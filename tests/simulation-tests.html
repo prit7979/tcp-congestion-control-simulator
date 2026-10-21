@@ -6,16 +6,19 @@
   <title>TCP AIMD Simulator — Engine Test Suite</title>
   <style>
     :root {
-      --bg-primary: #0f172a;
-      --bg-card: #1e293b;
-      --bg-inner: #0f172a;
-      --text-primary: #f8fafc;
-      --text-muted: #94a3b8;
-      --accent-blue: #38bdf8;
-      --accent-green: #22c55e;
-      --accent-red: #ef4444;
-      --accent-amber: #f59e0b;
-      --border-color: #334155;
+      --bg-primary: #0A0F2C;
+      --bg-card: #2E2A68;
+      --bg-inner: #0A0F2C;
+      --color-primary: #00C2FF;
+      --color-congestion: #FF8AE2;
+      --color-success: #C8FF6A;
+      --text-primary: #FFFFFF;
+      --text-muted: #D1D5F5;
+      --accent-blue: #00C2FF;
+      --accent-green: #C8FF6A;
+      --accent-red: #FF8AE2;
+      --accent-amber: #FF8AE2;
+      --border-color: rgba(255, 255, 255, 0.14);
       --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
     }
@@ -47,13 +50,13 @@
 
     .badge-phase {
       display: inline-block;
-      background: rgba(56, 189, 248, 0.15);
+      background: rgba(0, 194, 255, 0.15);
       color: var(--accent-blue);
-      border: 1px solid rgba(56, 189, 248, 0.3);
+      border: 1px solid rgba(0, 194, 255, 0.35);
       padding: 0.25rem 0.75rem;
       border-radius: 9999px;
       font-size: 0.75rem;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       margin-bottom: 0.75rem;
@@ -113,19 +116,20 @@
     .stat-value.failed { color: var(--accent-red); }
 
     .btn-rerun {
-      background: #2563eb;
-      color: #ffffff;
+      background: #00C2FF;
+      color: #0A0F2C;
       border: none;
       padding: 0.625rem 1.25rem;
       border-radius: 0.5rem;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       font-size: 0.9rem;
-      transition: background 0.2s ease;
+      transition: background 0.2s ease, box-shadow 0.2s ease;
     }
 
     .btn-rerun:hover {
-      background: #1d4ed8;
+      background: #33d1ff;
+      box-shadow: 0 4px 12px rgba(0, 194, 255, 0.4);
     }
 
     /* Test List */
@@ -178,13 +182,15 @@
     }
 
     .status-badge.pass {
-      background: rgba(34, 197, 94, 0.2);
+      background: rgba(200, 255, 106, 0.18);
       color: var(--accent-green);
+      border: 1px solid rgba(200, 255, 106, 0.35);
     }
 
     .status-badge.fail {
-      background: rgba(239, 68, 68, 0.2);
+      background: rgba(255, 138, 226, 0.18);
       color: var(--accent-red);
+      border: 1px solid rgba(255, 138, 226, 0.35);
     }
 
     .test-name {
@@ -195,8 +201,8 @@
 
     .test-details {
       padding: 0 1.25rem 1.25rem 1.25rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-      background: rgba(15, 23, 42, 0.5);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      background: var(--bg-inner);
     }
 
     .test-description {
@@ -243,9 +249,9 @@
     }
 
     .error-box {
-      background: rgba(239, 68, 68, 0.1);
+      background: rgba(255, 138, 226, 0.12);
       border: 1px solid var(--accent-red);
-      color: #fca5a5;
+      color: var(--accent-red);
       padding: 0.75rem;
       border-radius: 0.375rem;
       font-family: var(--font-mono);
@@ -266,7 +272,10 @@
 <body>
   <div class="container">
     <header>
-      <span class="badge-phase">Phase 1: Verification</span>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+        <span class="badge-phase">TCP Engine Verification</span>
+        <a href="../index.html" style="color: var(--accent-blue); text-decoration: none; font-size: 0.875rem; font-weight: 500;">&larr; Back to Simulator Dashboard</a>
+      </div>
       <h1>TCP AIMD Simulator Test Suite</h1>
       <p class="subtitle">Validates mathematical accuracy, threshold transitions, reset behavior, and integrity of <code>AIMDSimulator</code>.</p>
     </header>
@@ -294,7 +303,7 @@
     </div>
 
     <footer>
-      TCP Congestion Control Simulator — College Mini Project (Phase 1)
+      TCP Congestion Control Simulator &bull; College B.Tech Mini Project &bull; Engine Test Suite
     </footer>
   </div>
 
@@ -342,6 +351,11 @@
         title: "TEST 1: Initial state",
         description: "Verify default configuration values at RTT 0 (initialCwnd=4, alpha=1, beta=0.5, congestionThreshold=12).",
         run: () => {
+          assertEqual(AIMDSimulator.DEFAULTS.initialCwnd, 4, "Default initialCwnd must be 4");
+          assertEqual(AIMDSimulator.DEFAULTS.alpha, 1, "Default alpha must be 1");
+          assertEqual(AIMDSimulator.DEFAULTS.beta, 0.5, "Default beta must be 0.5");
+          assertEqual(AIMDSimulator.DEFAULTS.congestionThreshold, 12, "Default congestionThreshold must be 12");
+
           const sim = new AIMDSimulator();
           const state = sim.getState();
           assertEqual(state.rtt, 0, "RTT should start at 0");
@@ -349,6 +363,8 @@
           assertEqual(state.history.length, 1, "Initial history length should be 1");
           return {
             comparisons: [
+              { label: "Default initialCwnd", expected: 4, actual: AIMDSimulator.DEFAULTS.initialCwnd },
+              { label: "Default congestionThreshold", expected: 12, actual: AIMDSimulator.DEFAULTS.congestionThreshold },
               { label: "RTT", expected: 0, actual: state.rtt },
               { label: "cwnd", expected: 4, actual: state.cwnd },
               { label: "History entries", expected: 1, actual: state.history.length }
@@ -469,8 +485,8 @@
       },
       {
         id: 7,
-        title: "TEST 7: Custom configuration",
-        description: "Configure initialCwnd=2, alpha=2, beta=0.5, congestionThreshold=10. After 1 step: candidateCwnd = 2 + 2 = 4 < 10.",
+        title: "TEST 7: Custom configuration and reset",
+        description: "Configure initialCwnd=2, alpha=2, beta=0.5, congestionThreshold=10. After 1 step: candidateCwnd = 2 + 2 = 4 < 10. Also verify reset returns to custom initialCwnd 2.",
         run: () => {
           const sim = new AIMDSimulator({
             initialCwnd: 2,
@@ -483,10 +499,19 @@
           assertEqual(state.rtt, 1, "RTT should be 1");
           assertEqual(state.cwnd, 4, "cwnd should be 4");
 
+          // Verify reset returns to custom initialCwnd
+          sim.reset();
+          const resetState = sim.getState();
+          assertEqual(resetState.rtt, 0, "Reset RTT should be 0");
+          assertEqual(resetState.cwnd, 2, "Reset cwnd should return to custom initialCwnd (2)");
+          assertEqual(resetState.history.length, 1, "Reset history should have 1 entry");
+
           return {
             comparisons: [
-              { label: "RTT", expected: 1, actual: state.rtt },
-              { label: "cwnd", expected: 4, actual: state.cwnd }
+              { label: "Step 1 RTT", expected: 1, actual: state.rtt },
+              { label: "Step 1 cwnd", expected: 4, actual: state.cwnd },
+              { label: "Reset RTT", expected: 0, actual: resetState.rtt },
+              { label: "Reset cwnd", expected: 2, actual: resetState.cwnd }
             ]
           };
         }
